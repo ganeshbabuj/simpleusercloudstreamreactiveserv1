@@ -1,0 +1,49 @@
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          r2dbc: DEBUG
+
+server:
+  port: '9081'
+  error:
+    include-message: always
+
+
+spring:
+  r2dbc:
+    password: mySQL@2016
+    initialization-mode: always
+    url: r2dbc:mysql://localhost:3306/simpleusercloudstreamreactiveserv1
+    username: root
+
+  cloud:
+    stream:
+      function:
+        definition: updateUserStatus
+      bindings:
+        registerUser-out-0:
+          destination: user-registration
+        updateUserStatus-in-0:
+          destination: account-activation
+
+      kafka:
+        bindings:
+          registerUser-out-0:
+            producer:
+              value:
+                serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+          updateUserStatus-in-0:
+            consumer:
+              configuration:
+                value:
+                  deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        binder:
+          brokers: ec2-3-7-157-60.ap-south-1.compute.amazonaws.com:9092
+
+        streams:
+          binder:
+            brokers:
+              - ec2-3-7-157-60.ap-south-1.compute.amazonaws.com:9092
