@@ -1,19 +1,29 @@
 package com.example.simpleusercloudstreamreactiveserv1.service.impl;
 
+import com.example.cloudstream.resource.Account;
 import com.example.simpleusercloudstreamreactiveserv1.entity.UserEntity;
 import com.example.simpleusercloudstreamreactiveserv1.exception.NotFoundException;
 import com.example.simpleusercloudstreamreactiveserv1.repository.UserRepository;
 import com.example.cloudstream.resource.User;
 import com.example.simpleusercloudstreamreactiveserv1.service.UserService;
 import lombok.Setter;
+import org.apache.kafka.streams.KeyValue;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+
+import java.util.Objects;
 import java.util.Optional;
+
+import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON;
 
 @Setter
 @Service
@@ -37,9 +47,20 @@ public class UserServiceImpl implements UserService {
             return userRepository.save(userEntity)
                     .log()
                     .map(savedUserEntity -> {
+
+                        // IMPORTANT: THERE IS ANOTHER CREATE USER METHOD BELOW. ENSURE YOU ARE MODIFYING THE CORRECT ONE
+
                         User savedUser = modelMapper.map(savedUserEntity, User.class);
                         System.out.println("savedUser: " + savedUser);
-                        streamBridge.send("registerUser-out-0", savedUser);
+                        Message<User> userMessage = MessageBuilder.withPayload(savedUser)
+                                .setHeader(KafkaHeaders.MESSAGE_KEY, savedUser.getId())
+                                .build();
+
+                        System.out.println("Message Headers: " + userMessage.getHeaders());
+                        System.out.println("Message Payload: " + userMessage.getPayload());
+
+                        streamBridge.send("registerUser-out-0", userMessage);
+
                         return savedUser;
                     });
         });
@@ -50,9 +71,20 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(userEntity)
                 .log()
                 .map(savedUserEntity -> {
+
+                    // IMPORTANT: THERE IS ANOTHER CREATE USER METHOD ABOVE. ENSURE YOU ARE MODIFYING THE CORRECT ONE
+
                     User savedUser = modelMapper.map(savedUserEntity, User.class);
                     System.out.println("savedUser: " + savedUser);
-                    streamBridge.send("registerUser-out-0", savedUser);
+
+                    Message<User> userMessage = MessageBuilder.withPayload(savedUser)
+                            .setHeader(KafkaHeaders.MESSAGE_KEY, savedUser.getId())
+                            .build();
+
+                    System.out.println("Message Headers: " + userMessage.getHeaders());
+                    System.out.println("Message Payload: " + userMessage.getPayload());
+
+                    streamBridge.send("registerUser-out-0", userMessage);
                     return savedUser;
                 });
     }

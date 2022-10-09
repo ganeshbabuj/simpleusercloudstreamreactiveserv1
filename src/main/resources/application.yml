@@ -21,29 +21,49 @@ spring:
   cloud:
     stream:
       function:
-        definition: updateUserStatus
+        definition: updateUserStatus;summarizeUserRegistrations
       bindings:
         registerUser-out-0:
           destination: user-registration
         updateUserStatus-in-0:
+          destination: account-activation
+        summarizeUserRegistrations-in-0:
           destination: account-activation
 
       kafka:
         bindings:
           registerUser-out-0:
             producer:
-              value:
-                serializer: org.springframework.kafka.support.serializer.JsonSerializer
+              configuration:
+                key:
+                  serializer: org.apache.kafka.common.serialization.LongSerializer
 
           updateUserStatus-in-0:
             consumer:
               configuration:
-                value:
-                  deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+                key:
+                  serializer: org.apache.kafka.common.serialization.LongSerializer
+
+          summarizeUserRegistrations-in-0:
+            consumer:
+              configuration:
+                key:
+                  serializer: org.apache.kafka.common.serialization.LongSerializer
+
         binder:
           brokers: ec2-3-7-157-60.ap-south-1.compute.amazonaws.com:9092
 
         streams:
           binder:
+            configuration:
+              application:
+                server: ec2-3-7-157-60.ap-south-1.compute.amazonaws.com:9092
+
+            functions:
+              updateUserStatus:
+                applicationId: updateUserStatus
+              summarizeUserRegistrations:
+                applicationId: summarizeUserRegistrations
+
             brokers:
               - ec2-3-7-157-60.ap-south-1.compute.amazonaws.com:9092
